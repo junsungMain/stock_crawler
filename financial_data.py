@@ -1,6 +1,5 @@
 import yfinance as yf
 import pandas as pd
-import time
 from datetime import datetime
 
 def get_last_year_quarters_financials(stock_code, quarters=[3, 6, 9, 12], delay=1):
@@ -57,7 +56,7 @@ def get_last_year_quarters_financials(stock_code, quarters=[3, 6, 9, 12], delay=
                     if matching_rows:
                         operating_income = income_stmt.loc[matching_rows[0], date]
                         break
-                print(operating_income)
+                
                 # 3. 당기순이익 찾기
                 net_income = None
                 net_keywords = ['Net Income', 'Net Profit', 'Profit']

@@ -1,66 +1,9 @@
-# 대신증권 크레온 API (실시간)
-import requests
-from bs4 import BeautifulSoup
 import pandas as pd
 import concurrent.futures
 from tqdm import tqdm
 from openpyxl import load_workbook
-from financial_data import get_last_year_quarters_financials
-
-def get_stock_data(stock_code):
-    URL = f"https://navercomp.wisereport.co.kr/v2/company/c1010001.aspx?cmp_cd={stock_code}"
-    HEADERS = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36)"
-    }
-    RESPONSE = requests.get(URL, headers=HEADERS)
-    RESPONSE.raise_for_status()
-    SOUP = BeautifulSoup(RESPONSE.text, 'html.parser')
-    
-    try:
-        data = {}
-        
-        # 현재가
-        real_price = SOUP.select_one('#cTB11 > tbody > tr:nth-child(1) > td > strong')
-        if real_price:
-            data['현재가'] = int(real_price.text.replace(",","").strip())
-        
-        # 전일대비
-        prev_price = SOUP.select_one('#cTB11 > tbody > tr:nth-child(1) > td > span:nth-child(2)')
-        if prev_price:
-            price_text = prev_price.text.strip()
-            price_text = price_text.replace('원', '').replace('-', '▼').replace('+', '▲')
-            data['전일대비'] = price_text
-
-        # 등락률
-        change_rate = SOUP.select_one('#cTB11 > tbody > tr:nth-child(1) > td > span:nth-child(3)')
-        if change_rate:
-            data['등락률'] = round(float(change_rate.text.replace("%","").strip()) / 100, 4)
-        
-        # 거래량
-        volume = SOUP.select_one('#cTB11 > tbody > tr:nth-child(4) > td')
-        if volume:
-            data['거래량'] = int(volume.text.split('주')[0].replace(",","").strip())
-        
-        # 시가총액
-        market_cap = SOUP.select_one('#cTB11 > tbody > tr:nth-child(5) > td')
-        if market_cap:
-            data['시가 총액(억)'] = int(market_cap.text.replace("억원", "").replace(",","").strip())
-
-                
-        # 수익률
-        spans = SOUP.select('#cTB11 > tbody > tr:nth-child(9) > td > span')
-        if spans:
-            return_data = [span.text.strip() for span in spans]
-            data['수익률(1개월)'] = round(float(return_data[0].replace("%","").strip()) / 100, 4)
-            data['수익률(3개월)'] = round(float(return_data[1].replace("%","").strip()) / 100, 4)
-            data['수익률(6개월)'] = round(float(return_data[2].replace("%","").strip()) / 100, 4)
-            data['수익률(1년)'] = round(float(return_data[3].replace("%","").strip()) / 100, 4)
-            
-        return data
-            
-    except Exception as e:
-        print(f"에러 발생 (종목코드: {stock_code}): {str(e)}")
-        return None
+from financial_data import *
+from main_data import *
 
 def process_stock_list(excel_path):
     # 엑셀 파일 읽기 (기존 df)
@@ -80,6 +23,12 @@ def process_stock_list(excel_path):
             total=len(stock_codes),
             desc="주식 데이터 수집 중"
         ))
+
+        stock_extra_futures = list(tqdm(
+            executor.map(get_stock_extra_data, stock_codes),
+            total=len(stock_codes),
+            desc="주식 기타 데이터 수집 중"
+        ))
         
         financial_futures = list(tqdm(
             executor.map(get_last_year_quarters_financials, stock_codes),
@@ -88,16 +37,15 @@ def process_stock_list(excel_path):
         ))
         
         # 결과 병합
-    for stock_code, stock_data, financial_data in zip(stock_codes, stock_futures, financial_futures):
-    # 둘 중 하나라도 있으면 포함
-        if stock_data or financial_data:
-            combined_data = {}
-        
-        # stock_data가 있으면 추가
+    for stock_code, stock_data, financial_data, stock_extra_data in zip(stock_codes, stock_futures, financial_futures, stock_extra_futures):
+        combined_data = {}          
+
+        if stock_extra_data:
+            combined_data.update(stock_extra_data)
+
         if stock_data:
             combined_data.update(stock_data)
         
-        # financial_data가 있으면 추가
         if financial_data:
             combined_data.update(financial_data)
         
