@@ -48,7 +48,7 @@ def get_last_year_quarters_financials(stock_code, quarters=[3, 6, 9, 12], delay=
                         revenue = income_stmt.loc[matching_rows[0], date]
                         break
                 
-                # 2. 영업이익 찾기
+                # 2. 영업이익 증가율
                 operating_income = None
                 operating_keywords = ['quarterly_income_stmt']
                 for keyword in operating_keywords:
