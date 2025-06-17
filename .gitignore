@@ -1,19 +1,40 @@
-# 가상환경
-venv/
-env/
-ENV/
-build/
-
-# Python 캐시 파일
+# Python
 __pycache__/
 *.py[cod]
 *$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
 
-# IDE 설정 파일
-.vscode/
+# Virtual Environment
+venv/
+env/
+ENV/
+
+# IDE
 .idea/
+.vscode/
 *.swp
 *.swo
+
+# Project specific
+*.xlsx
+*.xls
+*.csv
 
 # 환경 설정 파일
 .env
