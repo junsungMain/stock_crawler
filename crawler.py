@@ -6,6 +6,7 @@ from financial_data import *
 from main_data import *
 from new_and_disclosure import *
 import time
+import os
 
 def retry_on_failure(func, max_retries=2, delay=1):
     def wrapper(*args, **kwargs):
@@ -33,23 +34,16 @@ def process_stock_list(excel_path):
     
     # 함수에 재시도 로직 적용
     get_stock_data_with_retry = retry_on_failure(get_stock_data)
-    get_stock_extra_data_with_retry = retry_on_failure(get_stock_extra_data)
     get_financials_with_retry = retry_on_failure(get_financial_data)
     get_news_disclosure_with_retry = retry_on_failure(get_news_and_disclosure_latest)
     
-    with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
+    with concurrent.futures.ThreadPoolExecutor(max_workers=os.cpu_count() * 2) as executor:
         stock_futures = list(tqdm(
             executor.map(get_stock_data_with_retry, stock_codes),
             total=len(stock_codes),
             desc="주식 데이터 수집 중"
         ))
 
-        stock_extra_futures = list(tqdm(
-            executor.map(get_stock_extra_data_with_retry, stock_codes),
-            total=len(stock_codes),
-            desc="주식 기타 데이터 수집 중"
-        ))
-        
     with concurrent.futures.ThreadPoolExecutor(max_workers=4) as executor:
         financial_futures = list(tqdm(
             executor.map(get_financials_with_retry, stock_codes),
@@ -64,13 +58,10 @@ def process_stock_list(excel_path):
         ))
         
     # 결과 병합
-    for stock_code, stock_data, financial_data, stock_extra_data, news_dis_data in zip(
-        stock_codes, stock_futures, financial_futures, stock_extra_futures, new_and_disclosure_futures):
+    for stock_code, stock_data, financial_data, news_dis_data in zip(
+        stock_codes, stock_futures, financial_futures, new_and_disclosure_futures):
         
         combined_data = {'종목코드': stock_code}          
-
-        if stock_extra_data:
-            combined_data.update(stock_extra_data)
 
         if stock_data:
             combined_data.update(stock_data)

@@ -42,5 +42,29 @@ def get_financial_data(stock_code):
                 if value == '-':
                     value = '0'
                 financial_dict[f'부채비율(%) | {i+1}'] = float(value.replace(',', ''))
-    
+
+        if key['title'] == 'ROE':
+            roe_data = key['columns']
+            roe_data = sorted(roe_data.items(), key=lambda x: x[0])[:4]
+            value = roe_data[-1][1]['value']
+            if value == '-':
+                value = '0'
+            financial_dict[f'ROE(%)'] = float(value.replace(',', ''))
+
+        if key['title'] == 'PBR':
+            pbr_data = key['columns']
+            pbr_data = sorted(pbr_data.items(), key=lambda x: x[0])[:4]
+            value = pbr_data[-1][1]['value']
+            if value == '-':
+                value = '0'
+            financial_dict[f'PBR(배)'] = float(value.replace(',', ''))
+                        
+        if key['title'] == 'PER':
+            per_data = key['columns']
+            per_data = sorted(per_data.items(), key=lambda x: x[0])[:4]
+            value = per_data[-1][1]['value']
+            if value == '-':
+                value = '0'
+            financial_dict[f'PER(배)'] = float(value.replace(',', ''))
+
     return financial_dict
