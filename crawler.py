@@ -35,31 +35,38 @@ def process_stock_list(excel_path):
     # 함수에 재시도 로직 적용
     get_stock_data_with_retry = retry_on_failure(get_stock_data)
     get_financials_with_retry = retry_on_failure(get_financial_data)
-    get_news_disclosure_with_retry = retry_on_failure(get_news_and_disclosure_latest)
+    get_disclosure_with_retry = retry_on_failure(get_latest_disclosure)
+    get_news_with_retry = retry_on_failure(get_latest_news)
     
-    with concurrent.futures.ThreadPoolExecutor(max_workers=os.cpu_count() * 2) as executor:
+    with concurrent.futures.ThreadPoolExecutor(os.cpu_count() * 2) as executor:
         stock_futures = list(tqdm(
             executor.map(get_stock_data_with_retry, stock_codes),
             total=len(stock_codes),
             desc="주식 데이터 수집 중"
         ))
 
-    with concurrent.futures.ThreadPoolExecutor(max_workers=4) as executor:
         financial_futures = list(tqdm(
             executor.map(get_financials_with_retry, stock_codes),
             total=len(stock_codes),
             desc="재무 데이터 수집 중"
         ))
-        
-        new_and_disclosure_futures = list(tqdm(
-            executor.map(get_news_disclosure_with_retry, stock_codes),
+
+    with concurrent.futures.ThreadPoolExecutor(5) as executor:
+        new_futures = list(tqdm(
+            executor.map(get_news_with_retry, stock_codes),
             total=len(stock_codes),
-            desc="뉴스 및 공시 데이터 수집 중"
+            desc="뉴스 데이터 수집 중"
+        ))
+        
+        disclosure_futures = list(tqdm(
+            executor.map(get_disclosure_with_retry, stock_codes),
+            total=len(stock_codes),
+            desc="공시 데이터 수집 중"
         ))
         
     # 결과 병합
-    for stock_code, stock_data, financial_data, news_dis_data in zip(
-        stock_codes, stock_futures, financial_futures, new_and_disclosure_futures):
+    for stock_code, stock_data, financial_data, news_data, disclosure_data in zip(
+        stock_codes, stock_futures, financial_futures, new_futures, disclosure_futures):
         
         combined_data = {'종목코드': stock_code}          
 
@@ -69,8 +76,11 @@ def process_stock_list(excel_path):
         if financial_data:    
             combined_data.update(financial_data)
         
-        if news_dis_data:
-            combined_data.update(news_dis_data)
+        if news_data:
+            combined_data.update(news_data)
+
+        if disclosure_data:
+            combined_data.update(disclosure_data)
         
         results.append(combined_data)
     
