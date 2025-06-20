@@ -2,17 +2,16 @@ import requests
 from bs4 import BeautifulSoup
 
 def get_stock_data(stock_code):
-    url = f"https://navercomp.wisereport.co.kr/v2/company/c1010001.aspx?cmp_cd={stock_code}"
-    headers = {
+    URL = f"https://navercomp.wisereport.co.kr/v2/company/c1010001.aspx?cmp_cd={stock_code}"
+    HEADERS = {
         "User-Agent": "Mozilla/5.0"
     }
-    response = requests.get(url, headers=headers)
+    response = requests.get(URL, headers=HEADERS)
     response.raise_for_status()
     soup = BeautifulSoup(response.text, 'html.parser')
-    
+
+    data = {}
     try:
-        data = {}
-        
         # 현재가
         real_price = soup.select_one('#cTB11 > tbody > tr:nth-child(1) > td > strong')
         if real_price:
@@ -54,5 +53,5 @@ def get_stock_data(stock_code):
             
     except Exception as e:
         print(f"에러 발생 (종목코드: {stock_code}): {str(e)}")
-        return None
+        return data
       

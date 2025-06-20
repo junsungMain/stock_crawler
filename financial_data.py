@@ -10,7 +10,7 @@ def get_financial_data(stock_code):
     response.raise_for_status()
     
     row_list = response.json()['financeInfo']['rowList']
-    financial_dict = {}
+    data = {}
     
     for key in row_list:
         if key['title'] == '매출액':
@@ -21,7 +21,7 @@ def get_financial_data(stock_code):
                 value = v['value']
                 if value == '-':
                     value = '0'
-                financial_dict[f'매출액(억) | {i+1}'] = float(value.replace(',', ''))
+                data[f'매출액(억) | {i+1}'] = float(value.replace(',', ''))
                 
         if key['title'] == '당기순이익':
             net_income_data = key['columns']
@@ -31,7 +31,7 @@ def get_financial_data(stock_code):
                 value = v['value']
                 if value == '-':
                     value = '0'
-                financial_dict[f'당기순이익(억) | {i+1}'] = float(value.replace(',', ''))
+                data[f'당기순이익(억) | {i+1}'] = float(value.replace(',', ''))
                 
         if key['title'] == '부채비율':
             debt_ratio_data = key['columns']
@@ -41,7 +41,7 @@ def get_financial_data(stock_code):
                 value = v['value']
                 if value == '-':
                     value = '0'
-                financial_dict[f'부채비율(%) | {i+1}'] = float(value.replace(',', ''))
+                data[f'부채비율(%) | {i+1}'] = float(value.replace(',', ''))
 
         if key['title'] == 'ROE':
             roe_data = key['columns']
@@ -49,7 +49,7 @@ def get_financial_data(stock_code):
             value = roe_data[-1][1]['value']
             if value == '-':
                 value = '0'
-            financial_dict[f'ROE(%)'] = float(value.replace(',', ''))
+            data[f'ROE(%)'] = float(value.replace(',', ''))
 
         if key['title'] == 'PBR':
             pbr_data = key['columns']
@@ -57,7 +57,7 @@ def get_financial_data(stock_code):
             value = pbr_data[-1][1]['value']
             if value == '-':
                 value = '0'
-            financial_dict[f'PBR(배)'] = float(value.replace(',', ''))
+            data[f'PBR(배)'] = float(value.replace(',', ''))
                         
         if key['title'] == 'PER':
             per_data = key['columns']
@@ -65,12 +65,12 @@ def get_financial_data(stock_code):
             value = per_data[-1][1]['value']
             if value == '-':
                 value = '0'
-            financial_dict[f'PER(배)'] = float(value.replace(',', ''))
+            data[f'PER(배)'] = float(value.replace(',', ''))
 
-    return financial_dict
+    return data
 
 def get_financial_extra_data(stock_code):
-    financial_dict = {}
+    data = {}
     try:
         URL = f'https://navercomp.wisereport.co.kr/company/chart/c1030001.aspx?cmp_cd={stock_code}&frq=Q&rpt=ISM&finGubun=MAIN&chartType=svg'
         
@@ -87,9 +87,8 @@ def get_financial_extra_data(stock_code):
                             break
                         if value == 'null':
                             value = '0'
-                        financial_dict[f'영업이익증가율(%) | {idx+1}'] = value
+                        data[f'영업이익증가율(%) | {idx+1}'] = value
                     break;
-        
         else:
             print(f"실패: 상태코드 {response.status_code}")
             print("응답 헤더:", dict(response.headers))
@@ -101,5 +100,5 @@ def get_financial_extra_data(stock_code):
     except Exception as e:
         print(f"기타 오류: {e}")
     finally:
-        return financial_dict
+        return data
     

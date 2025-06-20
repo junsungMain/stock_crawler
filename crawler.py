@@ -7,6 +7,9 @@ from main_data import *
 from new_and_disclosure import *
 import time
 import os
+import logging
+from datetime import datetime, timedelta
+from dotenv import load_dotenv
 
 def retry_on_failure(func, max_retries=3, delay=1):
     def wrapper(*args, **kwargs):
@@ -87,7 +90,6 @@ def process_stock_list(excel_path):
             desc="공시 데이터 수집 중"
         ))
 
-        
     # 결과 병합
     for stock_code, stock_data, financial_data, financial_extra_data, news_data, disclosure_data in zip(
         stock_codes, stock_futures, financial_futures,financial_extra_futures, new_futures, disclosure_futures):
@@ -153,7 +155,42 @@ def process_stock_list(excel_path):
     wb.save(excel_path)
     print(f"데이터가 {excel_path}에 저장되었습니다.")
 
+def setup_logging_and_cleanup(log_dir="logs", days_to_keep=7):
+    # 로그 디렉토리 생성
+    if not os.path.exists(log_dir):
+        os.makedirs(log_dir)
+    
+    # 오늘 날짜로 로그 파일명 생성
+    log_filename = os.path.join(log_dir, f"{datetime.now().strftime('%Y-%m-%d')}.log")
+    
+    # 로깅 설정
+    logging.basicConfig(
+        level=logging.INFO,
+        format='%(asctime)s [%(levelname)s] %(message)s',
+        handlers=[
+            logging.FileHandler(log_filename, encoding='utf-8'),
+            logging.StreamHandler()
+        ]
+    )
+    
+    # 오래된 로그 파일 삭제
+    now = datetime.now()
+    for fname in os.listdir(log_dir):
+        fpath = os.path.join(log_dir, fname)
+        if os.path.isfile(fpath):
+            try:
+                # 파일명에서 날짜 추출
+                date_str = fname.split(".")[0]
+                file_date = datetime.strptime(date_str, "%Y-%m-%d")
+                if now - file_date > timedelta(days=days_to_keep):
+                    os.remove(fpath)
+                    logging.info(f"오래된 로그 파일 삭제: {fname}")
+            except Exception as e:
+                logging.warning(f"로그 파일 삭제 중 오류: {fname}, {e}")
+
 if __name__ == "__main__":
-    input_excel = "stock_list.xlsx"  # 입력 엑셀 파일
+    load_dotenv()
+    input_excel = os.getenv('INPUT_EXCEL', 'stock_list.xlsx')
+    setup_logging_and_cleanup()
     process_stock_list(input_excel)
     print("종료")

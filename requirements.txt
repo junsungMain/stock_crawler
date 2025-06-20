@@ -1,5 +1,4 @@
 requests
 beautifulsoup4
-finance-datareader
-yfinance
-OpenDartReader
+pyinstaller
+python-dotenv

@@ -12,6 +12,7 @@ def get_latest_disclosure(stock_code):
         'pageSize': 1,
         'page': 1
     }
+    data = {}
     try:
         disclosure_response = requests.get(disclosure_url, headers=headers, params=params)
         disclosure_data = disclosure_response.json()
@@ -26,13 +27,14 @@ def get_latest_disclosure(stock_code):
                     latest_disclosure_date = datetime.fromisoformat(datetime_str.replace('Z', '+00:00')).strftime('%Y.%m.%d')
                 except ValueError:
                     latest_disclosure_date = ''
-        return {
+        data = {
             '최신 공시': latest_disclosure,
             '최신 공시 날짜':latest_disclosure_date
         }
+        return data
     except Exception as e:
         print(f"공시 에러: {e}")
-        return '', ''
+        return data
 
 # 뉴스 데이터만 가져오는 함수
 def get_latest_news(stock_code):
@@ -45,6 +47,7 @@ def get_latest_news(stock_code):
         'pageSize': 1,
         'page': 1
     }
+    data = {}
     try:
         news_response = requests.get(news_url, headers=headers, params=params)
         news_data = news_response.json()
@@ -56,10 +59,11 @@ def get_latest_news(stock_code):
             datetime_str = news_item.get('datetime', '')
             if datetime_str and len(datetime_str) >= 12:
                 latest_news_date = f"{datetime_str[:4]}.{datetime_str[4:6]}.{datetime_str[6:8]} {datetime_str[8:10]}:{datetime_str[10:12]}"
-        return {
+        data = {
             '최신 뉴스': latest_news,
             '최신 뉴스 날짜': latest_news_date
         }
+        return data
     except Exception as e:
         print(f"뉴스 에러: {e}")
-        return '', ''
+        return data
