@@ -39,18 +39,18 @@ def process_stock_list(excel_path):
     get_news_with_retry = retry_on_failure(get_latest_news)
     get_finacial_extra_with_retry = retry_on_failure(get_financial_extra_data)
     
-    # with concurrent.futures.ThreadPoolExecutor(os.cpu_count() * 2) as executor:
-    #     stock_futures = list(tqdm(
-    #         executor.map(get_stock_data_with_retry, stock_codes),
-    #         total=len(stock_codes),
-    #         desc="주식 데이터 수집 중"
-    #     ))
+    with concurrent.futures.ThreadPoolExecutor(os.cpu_count() * 2) as executor:
+        stock_futures = list(tqdm(
+            executor.map(get_stock_data_with_retry, stock_codes),
+            total=len(stock_codes),
+            desc="주식 데이터 수집 중"
+        ))
 
-    #     financial_futures = list(tqdm(
-    #         executor.map(get_financials_with_retry, stock_codes),
-    #         total=len(stock_codes),
-    #         desc="재무 데이터 수집 중"
-    #     ))
+        financial_futures = list(tqdm(
+            executor.map(get_financials_with_retry, stock_codes),
+            total=len(stock_codes),
+            desc="재무 데이터 수집 중"
+        ))
 
     with concurrent.futures.ThreadPoolExecutor(5) as executor:
         financial_extra_futures = list(tqdm(
@@ -73,16 +73,16 @@ def process_stock_list(excel_path):
 
         
     # 결과 병합
-    for stock_code, financial_extra_data, news_data, disclosure_data in zip(
-        stock_codes, financial_extra_futures, new_futures, disclosure_futures):
+    for stock_code, stock_data, financial_data, financial_extra_data, news_data, disclosure_data in zip(
+        stock_codes, stock_futures, financial_futures,financial_extra_futures, new_futures, disclosure_futures):
         
         combined_data = {'종목코드': stock_code}          
 
-        # if stock_data:
-        #     combined_data.update(stock_data)
+        if stock_data:
+            combined_data.update(stock_data)
         
-        # if financial_data:    
-        #     combined_data.update(financial_data)
+        if financial_data:    
+            combined_data.update(financial_data)
 
         if financial_extra_data:
             combined_data.update(financial_extra_data)
