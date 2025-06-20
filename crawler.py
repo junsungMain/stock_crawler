@@ -8,7 +8,7 @@ from new_and_disclosure import *
 import time
 import os
 
-def retry_on_failure(func, max_retries=2, delay=1):
+def retry_on_failure(func, max_retries=3, delay=1):
     def wrapper(*args, **kwargs):
         for attempt in range(max_retries):
             try:
@@ -51,6 +51,22 @@ def process_stock_list(excel_path):
             total=len(stock_codes),
             desc="재무 데이터 수집 중"
         ))
+
+    session = requests.Session()
+    session.headers.update({
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
+        'Accept-Language': 'ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7',
+        'Accept-Encoding': 'gzip, deflate, br',
+        'Connection': 'keep-alive',
+        'Upgrade-Insecure-Requests': '1',
+        'Sec-Fetch-Dest': 'document',
+        'Sec-Fetch-Mode': 'navigate',
+        'Sec-Fetch-Site': 'none',
+        'Cache-Control': 'max-age=0'
+    })
+    main_url = 'https://navercomp.wisereport.co.kr/'
+    session.get(main_url, timeout=5)
 
     with concurrent.futures.ThreadPoolExecutor(5) as executor:
         financial_extra_futures = list(tqdm(

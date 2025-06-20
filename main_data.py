@@ -55,48 +55,4 @@ def get_stock_data(stock_code):
     except Exception as e:
         print(f"에러 발생 (종목코드: {stock_code}): {str(e)}")
         return None
-    
-def get_stock_extra_data(stock_code):
-    url = f"https://finance.naver.com/item/main.naver?code={stock_code}"
-    headers = {
-        "User-Agent": "Mozilla/5.0"
-    }
-    response = requests.get(url, headers=headers)
-    response.raise_for_status()
-    soup = BeautifulSoup(response.text, 'html.parser')
-
-    try:
-        data = {}
-        
-        # ROE(%)
-        roe = soup.select_one('#content > div.section.trade_compare > table > tbody > tr:nth-child(12) > td:nth-child(2)')
-        if roe:
-            roe_text = roe.text.strip()
-            if roe_text:
-                data['ROE(%)'] = float(roe_text)
-            else:
-                data['ROE(%)'] = None
-
-        # PER(배)
-        per = soup.select_one('#content > div.section.trade_compare > table > tbody > tr:nth-child(13) > td:nth-child(2)')
-        if per:
-            per_text = per.text.replace(",","").strip()
-            if per_text:
-                data['PER(배)'] = float(per_text)
-            else:
-                data['PER(배)'] = None
-
-        # PBR(배)
-        pbr = soup.select_one('#content > div.section.trade_compare > table > tbody > tr:nth-child(14) > td:nth-child(2)')
-        if pbr:
-            pbr_text = pbr.text.replace(",","").strip()
-            if pbr_text:
-                data['PBR(배)'] = float(pbr_text)
-            else:
-                data['PBR(배)'] = None
-        return data
-            
-    except Exception as e:
-        print(f"에러 발생 (종목코드: {stock_code}): {str(e)}")
-        return None
       
