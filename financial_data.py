@@ -1,4 +1,5 @@
 import requests
+import time
 
 def get_financial_data(stock_code):
     URL = f"https://m.stock.naver.com/api/stock/{stock_code}/finance/quarter"
@@ -8,7 +9,7 @@ def get_financial_data(stock_code):
     }
     response = requests.get(URL, headers=headers)
     response.raise_for_status()
-
+    
     row_list = response.json()['financeInfo']['rowList']
     financial_dict = {}
     
@@ -68,3 +69,60 @@ def get_financial_data(stock_code):
             financial_dict[f'PER(배)'] = float(value.replace(',', ''))
 
     return financial_dict
+
+def get_financial_extra_data(stock_code):
+    session = requests.Session()
+
+    # 브라우저처럼 보이도록 헤더 설정
+    session.headers.update({
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
+        'Accept-Language': 'ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7',
+        'Accept-Encoding': 'gzip, deflate, br',
+        'Connection': 'keep-alive',
+        'Upgrade-Insecure-Requests': '1',
+        'Sec-Fetch-Dest': 'document',
+        'Sec-Fetch-Mode': 'navigate',
+        'Sec-Fetch-Site': 'none',
+        'Cache-Control': 'max-age=0'
+    })
+    try:
+        main_url = 'https://navercomp.wisereport.co.kr/'
+        session.get(main_url, timeout=5)        
+        
+        target_url = f'https://navercomp.wisereport.co.kr/company/chart/c1030001.aspx?cmp_cd={stock_code}&frq=Q&rpt=ISM&finGubun=MAIN&chartType=svg'
+        
+        session.headers.update({
+            'Referer': main_url
+        })
+        
+        response = session.get(target_url, timeout=5)
+        
+        if response.status_code == 200:
+            row_list = response.json()['chartData2']['series']
+            financial_dict = {}
+            
+            for key in row_list:
+                if key['name'] == '영업이익증가율':
+
+                    revenue_data = key['data']
+                    for idx, value in enumerate(revenue_data):
+                        if idx == 4:
+                            break
+                        if value == 'null':
+                            value = '0'
+                        financial_dict[f'영업이익증가율(%) | {idx+1}'] = value
+                    break;
+            return financial_dict
+        else:
+            print(f"실패: 상태코드 {response.status_code}")
+            print("응답 헤더:", dict(response.headers))
+
+    except requests.exceptions.Timeout:
+        print("타임아웃 오류 발생")
+    except requests.exceptions.ConnectionError:
+        print("연결 오류 발생")
+    except Exception as e:
+        print(f"기타 오류: {e}")
+    finally:
+        session.close()
