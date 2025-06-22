@@ -2,21 +2,33 @@ import time
 import logging
 from datetime import datetime, timedelta
 import os
+import requests
 
 def parse_num_value(value):
     return '0' if value == '-' else value.replace(',','')
 
-def retry_on_failure(func, max_retries=2, delay=1):
+def is_timeout_error(error):
+    """타임아웃 관련 에러인지 확인"""
+    timeout_errors = (
+        requests.exceptions.Timeout,
+        requests.exceptions.ReadTimeout,
+        requests.exceptions.ConnectTimeout
+    )
+    return isinstance(error, timeout_errors)
+
+def retry_on_failure(func, max_retries=3, delay=3):
     def wrapper(*args, **kwargs):
         for attempt in range(max_retries):
             try:
                 return func(*args, **kwargs)
             except Exception as e:
                 if attempt == max_retries - 1:
-                    print(f"에러 발생 (종목코드: {args}): {str(e)}")
+                    logging.error(f"최대 재시도 실패{args}{str(e)}")
                     return None
-                print(f"재시도 중... (시도 {attempt + 1}/{max_retries})")
-                time.sleep(delay)
+                
+                # 타임아웃 에러인 경우 더 긴 대기 시간 적용
+                wait_time = delay * (attempt + 1) if is_timeout_error(e) else delay
+                time.sleep(wait_time)
         return None
     return wrapper
 
@@ -26,15 +38,21 @@ def setup_logging_and_cleanup(log_dir="logs", days_to_keep=7):
     
     log_filename = os.path.join(log_dir, f"{datetime.now().strftime('%Y-%m-%d')}.log")
     
-    logging.basicConfig(
-        level=logging.INFO,
-        format='%(asctime)s [%(levelname)s] %(message)s',
-        handlers=[
-            logging.FileHandler(log_filename, encoding='utf-8'),
-            logging.StreamHandler()
-        ]
-    )
+    logger = logging.getLogger()
+    if logger.hasHandlers():
+        logger.handlers.clear()
+        
+    logger.setLevel(logging.INFO)
+    formatter = logging.Formatter('%(asctime)s [%(levelname)s] %(message)s')
     
+    file_handler = logging.FileHandler(log_filename, encoding='utf-8')
+    file_handler.setFormatter(formatter)
+    logger.addHandler(file_handler)
+    
+    stream_handler = logging.StreamHandler()
+    stream_handler.setFormatter(formatter)
+    logger.addHandler(stream_handler)
+
     now = datetime.now()
     for fname in os.listdir(log_dir):
         fpath = os.path.join(log_dir, fname)

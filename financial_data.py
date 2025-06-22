@@ -1,13 +1,15 @@
 import requests
 from common import parse_num_value
 
-def get_financial_data(stock_code):
+def get_financial_data(stock_code, session=None):
     URL = f"https://m.stock.naver.com/api/stock/{stock_code}/finance/quarter"
-    response = requests.get(URL)
+    
+    _session = session or requests
+    response = _session.get(URL)
     response.raise_for_status()
     response_data = response.json()['financeInfo']['rowList']
     
-    data = {}     
+    data = {}
     for key in response_data:
         if key['title'] == '매출액':
             revenue_data = key['columns']
@@ -39,19 +41,31 @@ def get_financial_data(stock_code):
         if key['title'] == 'PBR':
             pbr_data = key['columns']
             pbr_data = sorted(pbr_data.items(), key=lambda x: x[0])[:4]
-            data[f'PBR(배)'] = float(parse_num_value(roe_data[-1][1]['value']))
+            data[f'PBR(배)'] = float(parse_num_value(pbr_data[-1][1]['value']))
             continue
                             
         if key['title'] == 'PER':
             per_data = key['columns']
             per_data = sorted(per_data.items(), key=lambda x: x[0])[:4]
-            data[f'PER(배)'] = float(parse_num_value(roe_data[-1][1]['value']))
+            data[f'PER(배)'] = float(parse_num_value(per_data[-1][1]['value']))
     return data
 
 
-def get_financial_extra_data(stock_code):
+def get_financial_extra_data(stock_code, session=None):
     URL = f'https://navercomp.wisereport.co.kr/company/chart/c1030001.aspx?cmp_cd={stock_code}&frq=Q&rpt=ISM&finGubun=MAIN&chartType=svg'
-    response = requests.get(URL, timeout=5)
+    
+    _session = session or requests
+    
+    # 요청 헤더 추가
+    headers = {
+        'Referer': 'https://navercomp.wisereport.co.kr/',
+        'Accept': 'application/json, text/plain, */*',
+        'Accept-Language': 'ko-KR,ko;q=0.9,en;q=0.8',
+        'Cache-Control': 'no-cache'
+    }
+    
+    # 연결 타임아웃 10초, 읽기 타임아웃 15초로 설정
+    response = _session.get(URL, timeout=(10, 15), headers=headers)
     response.raise_for_status()
     
     data = {}

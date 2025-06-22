@@ -2,9 +2,10 @@ import requests
 from bs4 import BeautifulSoup
 from common import parse_num_value
 
-def get_stock_data(stock_code):
+def get_stock_data(stock_code, session=None):
     URL = f"https://polling.finance.naver.com/api/realtime/domestic/stock/{stock_code}"
-    response = requests.get(URL)
+    _session = session or requests
+    response = _session.get(URL)
     response.raise_for_status()
     response_data = response.json()['datas'][0]
 
@@ -18,9 +19,20 @@ def get_stock_data(stock_code):
     return data
 
     
-def get_stock_extra_data(stock_code):
+def get_stock_extra_data(stock_code, session=None):
     URL = f"https://navercomp.wisereport.co.kr/v2/company/c1010001.aspx?cmp_cd={stock_code}"
-    response = requests.get(URL)
+    _session = session or requests
+    
+    # 요청 헤더 추가
+    headers = {
+        'Referer': 'https://navercomp.wisereport.co.kr/',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+        'Accept-Language': 'ko-KR,ko;q=0.9,en;q=0.8',
+        'Cache-Control': 'no-cache'
+    }
+    
+    # 연결 타임아웃 10초, 읽기 타임아웃 15초로 설정
+    response = _session.get(URL, timeout=(10, 15), headers=headers)
     response.raise_for_status()
     soup = BeautifulSoup(response.text, 'html.parser')
     
@@ -31,11 +43,11 @@ def get_stock_extra_data(stock_code):
 
     earning_rate_data = soup.select('#cTB11 > tbody > tr:nth-child(9) > td > span')
     if earning_rate_data:
-        data = {
+        data.update({
             '수익률(1개월)': round(float(earning_rate_data[0].text.replace("%","").replace(",", "").strip()) / 100, 4),
             '수익률(3개월)': round(float(earning_rate_data[1].text.replace("%","").replace(",", "").strip()) / 100, 4),
             '수익률(6개월)': round(float(earning_rate_data[2].text.replace("%","").replace(",", "").strip()) / 100, 4),
             '수익률(1년)': round(float(earning_rate_data[3].text.replace("%","").replace(",", "").strip()) / 100, 4)            
-        }
+        })
 
     return data
