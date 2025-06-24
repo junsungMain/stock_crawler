@@ -1,5 +1,5 @@
 import requests
-from common import parse_num_value
+from module.common import parse_num_value
 
 def get_financial_data(stock_code, session=None):
     URL = f"https://m.stock.naver.com/api/stock/{stock_code}/finance/quarter"
@@ -56,7 +56,6 @@ def get_financial_extra_data(stock_code, session=None):
     
     _session = session or requests
     
-    # 요청 헤더 추가
     headers = {
         'Referer': 'https://navercomp.wisereport.co.kr/',
         'Accept': 'application/json, text/plain, */*',
@@ -64,8 +63,7 @@ def get_financial_extra_data(stock_code, session=None):
         'Cache-Control': 'no-cache'
     }
     
-    # 연결 타임아웃 10초, 읽기 타임아웃 15초로 설정
-    response = _session.get(URL, timeout=(10, 15), headers=headers)
+    response = _session.get(URL, headers=headers)
     response.raise_for_status()
     
     data = {}

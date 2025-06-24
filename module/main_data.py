@@ -1,29 +1,10 @@
 import requests
 from bs4 import BeautifulSoup
-from common import parse_num_value
-
-def get_stock_data(stock_code, session=None):
-    URL = f"https://polling.finance.naver.com/api/realtime/domestic/stock/{stock_code}"
-    _session = session or requests
-    response = _session.get(URL)
-    response.raise_for_status()
-    response_data = response.json()['datas'][0]
-
-    data = {
-        '현재가': float(parse_num_value(response_data['closePrice'])),
-        '전일대비': float(parse_num_value(response_data['compareToPreviousClosePrice'])) ,
-        '등락률': round(float(parse_num_value(response_data['fluctuationsRatio'])) / 100, 4),
-        '거래량': float(parse_num_value(response_data['accumulatedTradingVolume']))
-    }
-
-    return data
-
     
 def get_stock_extra_data(stock_code, session=None):
     URL = f"https://navercomp.wisereport.co.kr/v2/company/c1010001.aspx?cmp_cd={stock_code}"
     _session = session or requests
     
-    # 요청 헤더 추가
     headers = {
         'Referer': 'https://navercomp.wisereport.co.kr/',
         'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
@@ -31,16 +12,11 @@ def get_stock_extra_data(stock_code, session=None):
         'Cache-Control': 'no-cache'
     }
     
-    # 연결 타임아웃 10초, 읽기 타임아웃 15초로 설정
-    response = _session.get(URL, timeout=(10, 15), headers=headers)
+    response = _session.get(URL, headers=headers)
     response.raise_for_status()
     soup = BeautifulSoup(response.text, 'html.parser')
     
     data = {}
-    market_cap = soup.select_one('#cTB11 > tbody > tr:nth-child(5) > td')
-    if market_cap:
-        data['시가 총액(억)'] = int(market_cap.text.replace("억원", "").replace(",","").strip())
-
     earning_rate_data = soup.select('#cTB11 > tbody > tr:nth-child(9) > td > span')
     if earning_rate_data:
         data.update({
