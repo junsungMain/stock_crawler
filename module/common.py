@@ -15,7 +15,6 @@ def retry_on_failure(func, max_retries=3, delay=1):
                 if attempt == max_retries - 1:
                     logging.error(f"최대 재시도 실패{args}{str(e)}")
                     return None
-                
                 time.sleep(delay)
         return None
     return wrapper

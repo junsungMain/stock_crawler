@@ -2,10 +2,10 @@ import requests
 from module.common import parse_num_value
 
 def get_financial_data(stock_code, session=None):
-    URL = f"https://m.stock.naver.com/api/stock/{stock_code}/finance/quarter"
+    url = f"https://m.stock.naver.com/api/stock/{stock_code}/finance/quarter"
     
-    _session = session or requests
-    response = _session.get(URL)
+    _session = session or requests.Session()
+    response = _session.get(url)
     response.raise_for_status()
     response_data = response.json()['financeInfo']['rowList']
     
@@ -52,9 +52,9 @@ def get_financial_data(stock_code, session=None):
 
 
 def get_financial_extra_data(stock_code, session=None):
-    URL = f'https://navercomp.wisereport.co.kr/company/chart/c1030001.aspx?cmp_cd={stock_code}&frq=Q&rpt=ISM&finGubun=MAIN&chartType=svg'
+    url = f'https://navercomp.wisereport.co.kr/company/chart/c1030001.aspx?cmp_cd={stock_code}&frq=Q&rpt=ISM&finGubun=MAIN&chartType=svg'
     
-    _session = session or requests
+    _session = session or requests.Session()
     
     headers = {
         'Referer': 'https://navercomp.wisereport.co.kr/',
@@ -63,7 +63,7 @@ def get_financial_extra_data(stock_code, session=None):
         'Cache-Control': 'no-cache'
     }
     
-    response = _session.get(URL, headers=headers)
+    response = _session.get(url, headers=headers)
     response.raise_for_status()
     
     data = {}

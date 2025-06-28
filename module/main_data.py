@@ -2,8 +2,8 @@ import requests
 from bs4 import BeautifulSoup
     
 def get_stock_extra_data(stock_code, session=None):
-    URL = f"https://navercomp.wisereport.co.kr/v2/company/c1010001.aspx?cmp_cd={stock_code}"
-    _session = session or requests
+    url = f"https://navercomp.wisereport.co.kr/v2/company/c1010001.aspx?cmp_cd={stock_code}"
+    _session = session or requests.Session()
     
     headers = {
         'Referer': 'https://navercomp.wisereport.co.kr/',
@@ -12,7 +12,7 @@ def get_stock_extra_data(stock_code, session=None):
         'Cache-Control': 'no-cache'
     }
     
-    response = _session.get(URL, headers=headers)
+    response = _session.get(url, headers=headers)
     response.raise_for_status()
     soup = BeautifulSoup(response.text, 'html.parser')
     

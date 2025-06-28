@@ -2,13 +2,13 @@ import requests
 from datetime import datetime
 
 def get_latest_disclosure(stock_code, session=None):
-    URL = f"https://m.stock.naver.com/api/stock/{stock_code}/disclosure"
-    PARAMS = {
+    url = f"https://m.stock.naver.com/api/stock/{stock_code}/disclosure"
+    params = {
         'pageSize': 1,
         'page': 1
     }
-    _session = session or requests
-    response = _session.get(URL, params=PARAMS)
+    _session = session or requests.Session()
+    response = _session.get(url, params=params)
     response.raise_for_status()
     response_data = response.json()
 
@@ -30,13 +30,13 @@ def get_latest_disclosure(stock_code, session=None):
 
 
 def get_latest_news(stock_code, session=None):
-    URL = f"https://m.stock.naver.com/api/news/stock/{stock_code}"
-    PARAMS = {
+    url = f"https://m.stock.naver.com/api/news/stock/{stock_code}"
+    params = {
         'pageSize': 1,
         'page': 1
     }
-    _session = session or requests
-    response = _session.get(URL, params=PARAMS)
+    _session = session or requests.Session()
+    response = _session.get(url, params=params)
     response.raise_for_status()
     response_data = response.json()
     

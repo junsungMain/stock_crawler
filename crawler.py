@@ -6,7 +6,6 @@ from module.financial_data import get_financial_extra_data, get_financial_data
 from module.main_data import get_stock_extra_data
 from module.new_and_disclosure import get_latest_disclosure, get_latest_news
 import os
-from dotenv import load_dotenv
 from module.common import retry_on_failure, setup_logging_and_cleanup
 import requests
 import functools
@@ -16,15 +15,13 @@ from datetime import datetime
 import shutil
 
 def process_stock_list(template_excel_path):
+    # 템플릿 파일 복사  
     today_str = datetime.now().strftime('%Y%m%d')
     result_excel_path = f"{today_str}_주식현황.xlsx"
     shutil.copy(template_excel_path, result_excel_path)
-    
-    results = []
 
+    # session연결 설정
     session = requests.Session()
-    max_workers = min(os.cpu_count() * 2, 20)
-    
     adapter = requests.adapters.HTTPAdapter(
         pool_connections=10,
         pool_maxsize=20,
@@ -33,9 +30,7 @@ def process_stock_list(template_excel_path):
     )
     session.mount('https://', adapter)
     session.mount('http://', adapter)
-
     session.timeout = (5, 10)
-
     session.headers.update({
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
         'Accept': 'application/json, text/plain, */*',
@@ -44,10 +39,13 @@ def process_stock_list(template_excel_path):
         'Connection': 'keep-alive'
     })
 
+    # 종목 코드 리스트 가져오기
     data = get_theme_list(session=session)
     stock_codes = list(data.keys())
 
-    with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
+    # 코드별 주식 데이터 가져오기
+    results = []
+    with concurrent.futures.ThreadPoolExecutor(max_workers=min(os.cpu_count() * 2, 20)) as executor:
         fetcher = functools.partial(fetch_all_data_for_stock, session=session)
         results = list(tqdm(executor.map(fetcher, stock_codes), total=len(stock_codes), desc="전체 데이터 수집 중"))
     session.close()
@@ -102,17 +100,13 @@ def fetch_all_data_for_stock(stock_code, session):
     combined_data = {'종목코드': stock_code}
     
     for key, getter in getters.items():
-        try:
-            data = retry_on_failure(getter)(stock_code)
-            if data:
-                combined_data.update(data)
-        except Exception as e:
-            logging.error(f"{stock_code}의 {key} 데이터 수집 중 오류 발생: {e}")
+        data = retry_on_failure(getter)(stock_code)
+        if data:
+            combined_data.update(data)
             
     return combined_data
 
 if __name__ == "__main__":
-    load_dotenv()
     setup_logging_and_cleanup()
     process_stock_list("./template/stock_list.xlsx")
     logging.info("종료")
